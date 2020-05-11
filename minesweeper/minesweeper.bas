@@ -34,6 +34,7 @@
  340 ;
  350 RUN AT 3
  360 PROC InitDisplay()
+ 365 PROC SplashScreen()
  370 PROC InitCellTypes()
  380 PRINT "reseting"
  390 PROC ResetGrid()
@@ -211,3 +212,20 @@
 2110 LET %c[INT{flaggedFlag+uncoveredFlag} >> 4]=3:; still show flag for uncovered cell that is not a mine
 2120 LET %c[INT{flaggedFlag+uncoveredFlag+mineFlag} >> 4]=2
 2130 ENDPROC
+2195 ;
+2200 DEFPROC SplashScreen()
+2210 PROC PrintCentered("QuietBloke Productions",10)
+2212 PROC PrintCentered("presents",12)
+2214 PROC PrintCentered("MineSweeper",14)
+2216 LET done=0
+2220 REPEAT 
+2230 LET k$= INKEY$
+2240 IF K$=" " THEN LET done=1
+2250 REPEAT UNTIL done=1
+2260 ENDPROC
+2270 ;
+2300 DEFPROC PrintCentered(m$, row)
+2305 LOCAL %x
+2320 LET %x= (32 - LEN (m$)) / 2
+2330 PRINT AT row,%x;m$
+2340 ENDPROC
