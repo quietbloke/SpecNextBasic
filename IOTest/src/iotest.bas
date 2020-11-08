@@ -7,12 +7,23 @@ INK 7
 PAPER 0
 CLS
 
+PROC InitKeyboard()
 ; %k() stores all the states of the key
 REPEAT
     PROC ReadKeyboard()
     PROC DisplayKeysDown()
 REPEAT UNTIL finished=1
 STOP
+
+DEFPROC InitKeyboard()
+    ; store previous state
+    FOR %l=0 TO 7
+        LET %k(l)=31:    ; State of key 0 = up, 1 = dowm
+        LET %k(l+10)=0:  ; previous states from %k(0). (For internal use)
+        LET %k(l+20)=0:  ; State if key state has just flipped from 0 to 1
+        LET %k(l+30)=0:  ; Previous states from %k(20). (For internal use)
+    NEXT %l
+ENDPROC
 
 DEFPROC ReadKeyboard()
     ; store previous state
@@ -22,17 +33,17 @@ DEFPROC ReadKeyboard()
     NEXT %l
     
     rem xor the inputs as the default is that a 1 indicates then key is not pressed
-    LET %k(0)=% IN 63486^255: ; 5 to 1
-    LET %k(1)=% IN 61438^255: ; 6 to 0
+    LET %k(0)=% (IN 63486^255)&31: ; 1 to 5
+    LET %k(1)=% (IN 61438^255)&31: ; 0 to 6
 
-    LET %k(2)=% IN 64510^255: ; Q to T
-    LET %k(3)=% IN 57342^255: ; P to Y
+    LET %k(2)=% (IN 64510^255)&31: ; Q to T
+    LET %k(3)=% (IN 57342^255)&31: ; Y to P
 
-    LET %k(4)=% IN 65022^255: ; A to G
-    LET %k(5)=% IN 49150^255: ; Enter to H
+    LET %k(4)=% (IN 65022^255)&31: ; A to G
+    LET %k(5)=% (IN 49150^255)&31: ; Enter to H
 
-    LET %k(6)=% IN 65278^255: ; caps shift to V
-    LET %k(7)=% IN 32766^255: ; Space to B
+    LET %k(6)=% (IN 65278^255)&31: ; CapsShift, Z to V
+    LET %k(7)=% (IN 32766^255)&31: ; Space, Sym, M to B
 
     REM in offset 20 we store bits that have been set compared to previous setting
     REM eg: key pressed : 00001 current, 00000 prev,
@@ -69,14 +80,20 @@ DEFPROC Display0()
     PROC DisplayKey(5,2,"3",0,%@00100)
     PROC DisplayKey(6,2,"4",0,%@01000)
     PROC DisplayKey(7,2,"5",0,%@10000)
+
+    INK 7
+    IF %k(0)=0 THEN PRINT AT 2+10,1;"      ";"  ": ELSE PRINT AT 2+10,1;"%k(0)=";%k(0);"  "
 ENDPROC
 
 DEFPROC Display1()
-    PROC DisplayKey(13,2,"6",1,%@10000)
-    PROC DisplayKey(14,2,"7",1,%@01000)
-    PROC DisplayKey(15,2,"8",1,%@00100)
-    PROC DisplayKey(16,2,"9",1,%@00010)
-    PROC DisplayKey(17,2,"0",1,%@00001)
+    PROC DisplayKey(10,2,"6",1,%@10000)
+    PROC DisplayKey(11,2,"7",1,%@01000)
+    PROC DisplayKey(12,2,"8",1,%@00100)
+    PROC DisplayKey(13,2,"9",1,%@00010)
+    PROC DisplayKey(14,2,"0",1,%@00001)
+
+    INK 7
+    IF %k(1)=0 THEN PRINT AT 2+10,10;"      ";"  ": ELSE PRINT AT 2+10,10;"%k(1)=";%k(1);"  "
 ENDPROC
 
 DEFPROC Display2()
@@ -85,14 +102,20 @@ DEFPROC Display2()
     PROC DisplayKey(5,3,"E",2,%@00100)
     PROC DisplayKey(6,3,"R",2,%@01000)
     PROC DisplayKey(7,3,"T",2,%@10000) 
+
+    INK 7
+    IF %k(2)=0 THEN PRINT AT 3+10,1;"      ";"  ": ELSE PRINT AT 3+10,1;"%k(2)=";%k(2);"  "
 ENDPROC
 
 DEFPROC Display3()
-    PROC DisplayKey(13,3,"Y",3,%@10000)
-    PROC DisplayKey(14,3,"U",3,%@01000)
-    PROC DisplayKey(15,3,"I",3,%@00100)
-    PROC DisplayKey(16,3,"O",3,%@00010)
-    PROC DisplayKey(17,3,"P",3,%@00001)
+    PROC DisplayKey(10,3,"Y",3,%@10000)
+    PROC DisplayKey(11,3,"U",3,%@01000)
+    PROC DisplayKey(12,3,"I",3,%@00100)
+    PROC DisplayKey(13,3,"O",3,%@00010)
+    PROC DisplayKey(14,3,"P",3,%@00001)
+
+    INK 7
+    IF %k(3)=0 THEN PRINT AT 3+10,10;"      ";"  ": ELSE PRINT AT 3+10,10;"%k(3)=";%k(3);"  "
 ENDPROC
 
 DEFPROC Display4()
@@ -101,14 +124,20 @@ DEFPROC Display4()
     PROC DisplayKey(5,4,"D",4,%@00100)
     PROC DisplayKey(6,4,"F",4,%@01000)
     PROC DisplayKey(7,4,"G",4,%@10000)
+
+    INK 7
+    IF %k(4)=0 THEN PRINT AT 4+10,1;"      ";"  ": ELSE PRINT AT 4+10,1;"%k(4)=";%k(4);"  "
 ENDPROC
 
 DEFPROC Display5()
-    PROC DisplayKey(13,4,"H",5,%@10000)
-    PROC DisplayKey(14,4,"J",5,%@01000)
-    PROC DisplayKey(15,4,"K",5,%@00100)
-    PROC DisplayKey(16,4,"L",5,%@00010)
-    PROC DisplayKey(17,4,"Ent",5,%@00001)
+    PROC DisplayKey(10,4,"H",5,%@10000)
+    PROC DisplayKey(11,4,"J",5,%@01000)
+    PROC DisplayKey(12,4,"K",5,%@00100)
+    PROC DisplayKey(13,4,"L",5,%@00010)
+    PROC DisplayKey(14,4,"Ent",5,%@00001)
+
+    INK 7
+    IF %k(5)=0 THEN PRINT AT 4+10,10;"      ";"  ": ELSE PRINT AT 4+10,10;"%k(5)=";%k(5);"  "
 ENDPROC
 
 DEFPROC Display6()
@@ -117,20 +146,32 @@ DEFPROC Display6()
     PROC DisplayKey(5,5,"X",6,%@00100)
     PROC DisplayKey(6,5,"C",6,%@01000)
     PROC DisplayKey(7,5,"V",6,%@10000)
+
+    INK 7
+    IF %k(6)=0 THEN PRINT AT 5+10,1;"      ";"  ": ELSE PRINT AT 5+10,1;"%k(6)=";%k(6);"  "
 ENDPROC
 
 DEFPROC Display7()
-    PROC DisplayKey(13,5,"B",7,%@10000)
-    PROC DisplayKey(14,5,"N",7,%@01000)
-    PROC DisplayKey(15,5,"M",7,%@00100)
-    PROC DisplayKey(16,5,"Sym",7,%@00010)
-    PROC DisplayKey(19,5,"Spc",7,%@00001)
+    PROC DisplayKey(10,5,"B",7,%@10000)
+    PROC DisplayKey(11,5,"N",7,%@01000)
+    PROC DisplayKey(12,5,"M",7,%@00100)
+    PROC DisplayKey(13,5,"Sym",7,%@00010)
+    PROC DisplayKey(16,5,"Spc",7,%@00001)
+
+    INK 7
+    IF %k(7)=0 THEN PRINT AT 5+10,10;"      ";"  ": ELSE PRINT AT 5+10,10;"%k(7)=";%k(7);"  "
 ENDPROC
 
 ; %x xpos, %y ypos, l$ label, %s state array pos, %m mask
 DEFPROC DisplayKey(%x,%y,l$,%s,%m)
-    IF %k(s)&m <> 0 THEN INK 3: ELSE INK 1
-    IF %k(s+20)&m <> 0 THEN INK 7
+    LOCAL %i
+    %i=2
+    IF %k(s)&m <> 0 THEN %i=4
+
+    IF %k(s+20)&m <> 0 THEN %i=7
+    INK %i
     PRINT AT %y,%x;l$
+
+;    IF %k(s)&m=0 THEN PRINT AT %y+10,%x;"0": ELSE PRINT AT %y+10,%x;"1"
+;    PRINT AT %y+10,%x; %m
 ENDPROC
-{}
