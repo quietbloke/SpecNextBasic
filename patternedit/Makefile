@@ -15,7 +15,8 @@ BANKSOURCES != find src/bank -type f -name "*.bas" | sort
 
 BANKOBJECTS = $(BANKSOURCES:$(BANKSRCDIR)/%.bas=$(OBJDIR)/bank/%.bas) 
 
-build/$(APP).bas : src/$(APP).bas build/bank/globalvars.bas build/bank/splashscreen.bas build/bank/helpscreen.bas
+#build/$(APP).bas : src/$(APP).bas build/bank/globalvars.bas build/bank/splashscreen.bas build/bank/helpscreen.bas
+build/$(APP).bas : src/$(APP).bas $(BANKOBJECTS)
 	txt2bas -i src/$(APP).bas -o build/$(APP).bas
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke/$(APP)

@@ -7,34 +7,41 @@
 RUN AT 3: ; May as well use all that processor power
 ;PROC InitDisplay()
 
-BANK NEW bnk
-LOAD "globalvars.bas" BANK bnk
-BANK bnk PROC InitVars()
-BANK bnk CLEAR
+BANK NEW tempbank
+LOAD "globalvars.bas" BANK tempbank
+BANK tempbank PROC InitVars()
+BANK tempbank CLEAR
 
-BANK NEW bnk
-LOAD "splashscreen.bas" BANK bnk
-BANK bnk PROC SplashScreen()
-BANK bnk CLEAR
+BANK NEW tempbank
+LOAD "splashscreen.bas" BANK tempbank
+BANK tempbank PROC SplashScreen()
+BANK tempbank CLEAR
 
 BANK NEW helpbank
 LOAD "helpscreen.bas" BANK helpbank
 
+BANK NEW iobank
+LOAD "IO.bas" BANK iobank
+
 PROC InitDisplay()
+
+BANK iobank PROC InitKeyboard()
 
 ; game loop
 REPEAT
-  PROC HideSpriteCursor()
-  k$= INKEY$
-  %c= CODE k$
+  BANK iobank PROC ReadKeyboard()
 
-  IF %c=11 THEN IF cy > 0 THEN cy=cy-1
-  IF %c=10 THEN IF cy < 15 THEN cy=cy+1
+  if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF cy > 0 THEN PROC HideSpriteCursor(): cy=cy-1
+  if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF cy < 15 THEN PROC HideSpriteCursor(): cy=cy+1
 
-  IF %c=8 THEN IF cx > 0 THEN cx=cx-1
-  IF %c=9 THEN IF cx < 15 THEN cx=cx+1
+  if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF cx > 0 THEN PROC HideSpriteCursor(): cx=cx-1
+  if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF cx < 15 THEN PROC HideSpriteCursor(): cx=cx+1
 
-  IF k$="h" THEN REPEAT: REPEAT UNTIL INKEY$ = "": BANK helpbank PROC HelpScreen()
+  ; The . Key will plot a pixel 
+  if % ( k(7) & 6 = 6 ) THEN STOP
+
+  IF %k(5) & 16 = 16 THEN BANK helpbank PROC HelpScreen()
+
   PROC ShowSpriteCursor()
 
 REPEAT UNTIL finished = 1
@@ -137,17 +144,21 @@ DEFPROC InitSprites()
 ENDPROC
 
 DEFPROC ShowSpriteCursor()
-    LAYER 2
-    pFlashCount=pFlashCount+1
-    IF pFlashCount > pFlashRate THEN pFlash=1-pFlash: pFlashCount = 0
+  LAYER 2
+  LOCAL %c
+  pFlashCount=pFlashCount+1
+  IF pFlashCount > pFlashRate THEN pFlash=1-pFlash: pFlashCount = 0
 
-    IF pFlash=0 THEN %c=127: ELSE %c=227
-    PROC LAYERERASE(cx*8,cy*8,8,8,%c)
-    PROC LAYERERASE(cx*8+1,cy*8+1,6,6,227)
+  IF pFlash=0 THEN %c=127: ELSE %c=227
+  INK %c
+  PROC LAYERERASE(cx*8,cy*8,8,8,%c)
+;    PROC LAYERERASE(cx*8+1,cy*8+1,6,6,227)
 ENDPROC
 
 DEFPROC HideSpriteCursor()
-    PROC LAYERERASE(cx*8,cy*8,8,8,227)
+  PROC LAYERERASE(cx*8,cy*8,8,8,227)
+  pFlashCount=0
+  pFlash = 0
 ENDPROC
 
 ; Basic command LAYER ERASE doesnt work in CSpect
@@ -155,8 +166,8 @@ ENDPROC
 ; using CSpect and then we can switch for the prod build
 DEFPROC LAYERERASE(%x,%y,%w,%h,%c)
   INK %c
-  FOR %v=0 TO %h
+  FOR %v=0 TO %h-1
     PLOT %x,%y+v
-    DRAW %w,0 
+    DRAW %w-1,0 
   NEXT %v
 ENDPROC

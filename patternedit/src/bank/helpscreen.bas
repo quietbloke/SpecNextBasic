@@ -11,12 +11,17 @@ DEFPROC HelpScreen()
   print at 1,0;"---------------"
   print at 1,16;"---------------"
 
+
+  PROC PrintCentered("Press Break to return to the Editor ",23)
+
   ; Display layer 1 over the other layers
   LAYER OVER 4
   LET done=0
-  REPEAT 
-    LET k$= INKEY$
-    IF K$ <> "" THEN LET done=1
+  ; Escape will return
+  REPEAT
+    BANK iobank PROC ReadKeyboard()
+
+    IF % (k(0) & 1 = 1) AND (k(6) & 1 = 1) THEN done=1
   REPEAT UNTIL done=1
 
   ; Put layer 1 at the bottom again
