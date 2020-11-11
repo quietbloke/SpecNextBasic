@@ -1,11 +1,21 @@
 #autoline 10
 DEFPROC InitVars()
-    LET cx = 1:; cursor xpos
-    LET cy = 1:; cursor ypos
+    ; Cursor on the current sprite pattern
+    cx = 7:; cursor xpos
+    cy = 7:; cursor ypos
 
-    LET pFlashRate = 10:; speed of cursor flash
-    LET pFlash = 0:; is cursor on or off
-    LET pFlashCount = 0:; time time flash toggles
+    pFlashRate = 4:; speed of cursor flash; this must be bit ( 1,2,4,8,16,32 etc)
+    pFlash = 0:; is cursor on or off
+    pFlashCount = 0:; time time flash toggles
     ;
-    LET finished = 0
+    ; Cursor on the current palette colour
+    px = 15:; palette cursor xpos
+    py = 15:; palette cursor ypos
+
+    ; Cursor on the current pattern
+    tx = 0:; palette cursor xposi
+    ty = 0:; palette cursor ypos
+    ;
+    active = 0:; indicates what area has focus (sprite=0, palette=1, patten=2) 
+    finished = 0
 ENDPROC

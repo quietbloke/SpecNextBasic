@@ -10,16 +10,14 @@ DEFPROC SplashScreen()
 
   ; Display layer 1 over the other layers
   LAYER OVER 4
-  LET done=0
-  REPEAT 
-    LET k$= INKEY$
-    IF K$<>"" THEN LET done=1
-  REPEAT UNTIL done=1
+
+  PAUSE 120
 
   ; Put layr 1 at the bottom again
   LAYER OVER 0
 ENDPROC
 ;
+
 DEFPROC PrintCentered(m$, row)
   LOCAL %x
   LET %x= (32 - LEN (m$)) / 2

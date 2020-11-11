@@ -27,10 +27,41 @@ PROC InitDisplay()
 
 BANK iobank PROC InitKeyboard()
 
+; active 0 = main editor
+; active 1 = palette selector
+; active 3 = pattern selector
+LET active=0
+
 ; game loop
 REPEAT
   BANK iobank PROC ReadKeyboard()
+  ; i selects sprite
+  ; o selects palette
+  ; p selects pattern
+  IF %k(3)&4=4 THEN active=0: BORDER 0
+  IF %k(3)&2=2 THEN active=1: BORDER 1
+  IF %k(3)&1=1 THEN active=2: BORDER 2
 
+  IF active=0 THEN PROC handleSprite()
+  IF active=1 THEN PROC handlePalette()
+  IF active=2 THEN PROC handlePattern()
+
+  IF %k(5) & 16 = 16 THEN BANK helpbank PROC HelpScreen()
+
+  ; Whatever has happened for now always make sure
+  ; the current pattern is displayed in the main sprite and the normal sized sprite
+  SPRITE 0,32,32,(ty*16)+tx,%@00000001,0,2,2
+  SPRITE 1,32+(16*8)+8,32+8+6*16,(ty*16)+tx,1
+
+  PROC ShowSpriteCursor()
+  PROC ShowPaletteCursor()
+  PROC ShowPatternCursor()
+
+REPEAT UNTIL finished = 1
+
+STOP 
+
+DEFPROC HandleSprite()
   if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF cy > 0 THEN PROC HideSpriteCursor(): cy=cy-1
   if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF cy < 15 THEN PROC HideSpriteCursor(): cy=cy+1
 
@@ -38,35 +69,45 @@ REPEAT
   if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF cx < 15 THEN PROC HideSpriteCursor(): cx=cx+1
 
   ; The . Key will plot a pixel 
-  if % ( k(7) & 6 = 6 ) THEN STOP
+  IF %(k(7)&6=6) THEN PROC PlotPixelToPattern(ty*16+tx,cx,cy,py*16+px)
+ENDPROC
 
-  IF %k(5) & 16 = 16 THEN BANK helpbank PROC HelpScreen()
+DEFPROC HandlePalette()
+  if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF py > 0 THEN PROC HidePaletteCursor(): py=py-1
+  if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF py < 15 THEN PROC HidePaletteCursor(): py=py+1
 
-  PROC ShowSpriteCursor()
+  if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF px > 0 THEN PROC HidePaletteCursor(): px=px-1
+  if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF px < 15 THEN PROC HidePaletteCursor(): px=px+1
+ENDPROC
 
-REPEAT UNTIL finished = 1
+DEFPROC HandlePattern()
+  if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF ty > 0 THEN PROC HidePatternCursor(): ty=ty-1
+  if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF ty < 3 THEN PROC HidePatternCursor(): ty=ty+1
 
-STOP 
-;
+  if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF tx > 0 THEN PROC HidePatternCursor(): tx=tx-1
+  if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF tx < 15 THEN PROC HidePatternCursor(): tx=tx+1
+ENDPROC
+
 ; Layer 1 at the back. This can be used to display any borders
-; around specific sprites on the display
-; Layer 2 in the middle. This layer shares the pallete of the sprites
-; and is used to display the colour picker.
+; around specific sprites on the display.
 ; Sprites. These are on the top. They are used to show
 ;   The zoomed in current pattern. User draws on this
 ;   The current pattern shown in normal size
 ;   The selected patterns for animation
 ;   An animated pattern
 ;   All 64 patterns.
-
-; 
+; Layer 2. This layer shares the pallete of the sprites
+; and is used to
+;   Display the colour picker.
+;   Display the grid on the main sprite
+;   Display the cursors for the main sprite, palette and patterns 
 DEFPROC InitDisplay()
   PROC InitLayerOne()
   PROC InitLayerTwo()
   PROC InitSprites()
-;LAYER 1,1:; standard res
-;  BORDER 0: INK 0: PAPER 7
-; CLS 
+  ;LAYER 1,1:; standard res
+  ;  BORDER 0: INK 0: PAPER 7
+  ; CLS 
 ENDPROC
 ;
 DEFPROC InitLayerOne()
@@ -93,11 +134,20 @@ DEFPROC InitLayerTwo()
   PAPER 227
   CLS
 
+  INK 0
+  ; Render the palette grid over the main sprite
+  FOR %x=0 to 16
+    PLOT 0,%x*4
+    DRAW 4*16,0
+    PLOT %x*4,0
+    DRAW 0,4*16
+  NEXT %x
+
   ; Render the palette
   %c=0
   FOR %y=0 to 15
     FOR %x=0 TO 15
-      PROC LAYERERASE(%x*6+128+32,%y*6,5,5,%c)
+      PROC LAYERERASE(%x*4+160+32-1,%y*4+1,3,3,%c)
       %c=%c+1
     NEXT %x
   NEXT %y
@@ -121,11 +171,11 @@ DEFPROC InitSprites()
   ; Display a zoomed version of the sprite contianing pattern 0
   ; last 2 paramters are the sprite scale in x and y.
   ; a 3 inidicates 8x zoom
-  SPRITE 0,32,32,0,%@00000001,0,3,3
+  ;  SPRITE 0,32,32,0,%@00000001,0,3,3
 
   ; Also display a sprite with pattern 0 normal size
   ;  SPRITE 1,32 + (16*8)+8,32+8,0,1
-  SPRITE 1,32 + (16*8)+8,32+8+6*16,0,1
+  ;  SPRITE 1,32 + (16*8)+8,32+8+6*16,0,1
 
   ; placeholder sprites
   ; show the animation frames ( up to 6? or 8 ?)
@@ -136,11 +186,18 @@ DEFPROC InitSprites()
 
   %s = 8
 
-  FOR %y=0 TO 1
+  FOR %y=0 TO 3
     FOR %x=0 TO 15
-      SPRITE %s,32,128+32,0,1
+      SPRITE %s,%x*16+32,%y*16+128+32,%y*16+x,1
+      %s = %s + 1
     NEXT %x
   NEXT %y
+ENDPROC
+
+; Pattern, xpos, ypos, colour
+DEFPROC PlotPixelToPattern(%p,%x,%y,%c)
+  BANK patternBank POKE % ((p*256)+(y*16)+x),%c
+  SPRITE BANK patternBank
 ENDPROC
 
 DEFPROC ShowSpriteCursor()
@@ -149,16 +206,55 @@ DEFPROC ShowSpriteCursor()
   pFlashCount=pFlashCount+1
   IF pFlashCount > pFlashRate THEN pFlash=1-pFlash: pFlashCount = 0
 
-  IF pFlash=0 THEN %c=127: ELSE %c=227
-  INK %c
-  PROC LAYERERASE(cx*8,cy*8,8,8,%c)
-;    PROC LAYERERASE(cx*8+1,cy*8+1,6,6,227)
+  ;  IF pFlash=0 THEN %c=127: ELSE %c=227
+  ;  INK %c
+  ;  PROC LAYERERASE(cx*8,cy*8,8,8,%c)
+  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
+  INK ch: PLOT cx*4,cy*4: DRAW 4,0: INK cv: DRAW 0,4: INK ch: DRAW -4,0: INK cv: DRAW 0,-4
 ENDPROC
 
 DEFPROC HideSpriteCursor()
-  PROC LAYERERASE(cx*8,cy*8,8,8,227)
-  pFlashCount=0
-  pFlash = 0
+  PROC LAYERERASE(cx*4,cy*4,4,4,227)
+  INK 0
+  PLOT cx*4,cy*4
+  DRAW 4,0
+  DRAW 0,4
+  DRAW -4,0
+  DRAW 0,-4
+  ;  pFlashCount=0
+  ;  pFlash = 0
+ENDPROC
+
+DEFPROC ShowPaletteCursor()
+  LAYER 2
+  INK 255
+
+;  PLOT px*4+159+31,py*4: DRAW 4,0: DRAW 0,4: DRAW -4,0: DRAW 0,-4 
+  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
+  INK ch: PLOT px*4+159+31,py*4: DRAW 4,0: INK cv: DRAW 0,4: INK ch: DRAW -4,0: INK cv: DRAW 0,-4
+ENDPROC
+
+DEFPROC HidePaletteCursor()
+  LAYER 2
+  INK 227
+
+  PLOT px*4+159+31,py*4: DRAW 4,0: DRAW 0,4: DRAW -4,0: DRAW 0,-4 
+ENDPROC
+
+DEFPROC ShowPatternCursor()
+  LAYER 2
+  INK 255
+
+;  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
+  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
+  INK ch: PLOT tx*16,ty*16+128: DRAW 15,0: INK cv: DRAW 0,15: INK ch: DRAW -15,0: INK cv: DRAW 0,-15
+ENDPROC
+
+DEFPROC HidePatternCursor()
+  LAYER 2
+  INK 227
+
+  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
 ENDPROC
 
 ; Basic command LAYER ERASE doesnt work in CSpect

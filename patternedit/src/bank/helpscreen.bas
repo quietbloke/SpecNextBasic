@@ -8,8 +8,26 @@ DEFPROC HelpScreen()
 
   PROC PrintCentered("Pattern Edit HELP",0)
 ;
-  print at 1,0;"---------------"
-  print at 1,16;"---------------"
+  PRINT AT 1,0;"          General               "
+  PRINT AT 2,0;"--------------------------------"
+  PRINT AT 3,0;"Arrow keys to move active cursor"
+  PRINT AT 4,0;"i Select Sprite Editor"
+  PRINT AT 5,0;"o Select Palette "
+  PRINT AT 6,0;"p Select Patterns"
+
+  PRINT AT 8,0; "       Sprite Editor            "
+  PRINT AT 9,0; "--------------------------------"
+  PRINT AT 10,0;". Paint pixel                   "
+  PRINT AT 11,0;"z Clear pixel                   "
+
+  PRINT AT 15,0; "           Palette              "
+  PRINT AT 16,0; "--------------------------------"
+ 
+  PRINT AT 1,32; "           Pattern              "
+  PRINT AT 2,32; "--------------------------------"
+  
+
+  PRINT AT 2,32;"---------------"
 
 
   PROC PrintCentered("Press Break to return to the Editor ",23)
