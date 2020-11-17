@@ -4,47 +4,47 @@
 ; 
 ; #define C=3
 
-RUN AT 3: ; May as well use all that processor power
+RUN AT 0: ; May as well use all that processor power
 
 BANK NEW iobank
 LOAD "IO.bas" BANK iobank
-
-PROC InitDisplay()
-
 BANK iobank PROC InitKeyboard()
 
-finished = 0
+PROC InitDisplay()
+PROC EnableTileLayer()
+PROC TileLayerClip(0,0,0,0)
+PROC SetTilePalette()
+PROC CreateTiles()
+PROC DrawTiles()
+PROC TileLayerClip(0,159,0,255)
 
+FOR %l=4 TO 9
+  PROC SetTile(%l,%l,1,0)
+NEXT %l
+
+finished = 0
 ; game loop
 REPEAT
   BANK iobank PROC ReadKeyboard()
 
   IF %k(7) & 1 = 1 THEN finished = 1
-
 REPEAT UNTIL finished = 1
 
 PAUSE 0
 
-PROC CloseTiles()
+PROC CloseTileLayer()
 STOP 
 
-; 
+; -------------------------------------
+
 DEFPROC InitDisplay()
-  PROC InitULAMode()
-  PROC InitTiles()
-ENDPROC
-;
-DEFPROC InitULAMode()
-  LAYER 1,1: ; Use Standard Res mode
-  PAPER 7
+  LAYER 1,1
+  PAPER 0
   CLS
-
   BORDER 1
-
-  LAYER OVER 1: ; Layer 2 over Sprite over Layer 1
 ENDPROC
-;
-DEFPROC InitTiles()
+
+DEFPROC EnableTileLayer()
   %t=%$00
   %d=%$10
 
@@ -88,25 +88,22 @@ DEFPROC InitTiles()
   ;  and each pixel is represented in 4 bits.
   REG %$6F, %d
 
-  ; Set which palette index is transparent (0- 15, hex 0 - F), default is 0.
-  ; bits 7-4 = reseved
-  ; bits 3-0 = index value
-  REG %$4C, %$f
-
-  ; We should selet the palette to use and define to colours?
-
   ; Set the visible size of the tilenmap ( the clip window )
   ; This is achived with multiple calls to the port.
- 
-  ; X left position
-  REG %$1B, 0:;8
-  ; X right position : Note The X xo-ords are internally doubled so we specify a value 0 - 159
-  REG %$1B, 159:;151
-  ; Y top position
-  REG %$1B, 0:;16
-  ; Y bottom position
-  REG %$1B, 255:;239
+ ENDPROC
 
+DEFPROC TileLayerClip(x1,x2,y1,y2)
+  ; X left position
+  REG %$1B, x1:;8
+  ; X right position : Note The X xo-ords are internally doubled so we specify a value 0 - 159
+  REG %$1B, x2:;151
+  ; Y top position
+  REG %$1B, y1:;16
+  ; Y bottom position
+  REG %$1B, y2:;239
+ENDPROC
+
+DEFPROC SetTilePalette()
   ; Set the palette
   REG %$43,%@00110000:; select tilemap palette
   REG %$40,1:; select palette index
@@ -115,44 +112,34 @@ DEFPROC InitTiles()
   REG %$41,%@00011100: ; set the colour
   REG %$41,%@00000011: ; set the colour
 
-  ; Also we need commands to set the Tilemap Offsets
-  ; Ports  %$2F and %$30
-
-  POKE %$4000+t+440,1
-  POKE %$4000+t+441,0
-
-  POKE %$4000+t+444,2
-  POKE %$4000+t+445,0
-
-  POKE %$4000+t+448,3
-  POKE %$4000+t+449,0
-
-  POKE %$4000+t+690,3
-  POKE %$4000+t+691,0
-
-  ; bit 3 = xmirror 8
-  ; bit 2 = ymirror 4
-  ; bit 1 = Rotate 2
-  POKE %$4000+t+694,3
-  POKE %$4000+t+695,2:; rotate
-
-  POKE %$4000+t+698,3
-  POKE %$4000+t+699,4:; mirror y
-
-  POKE %$4000+t+702,3
-  POKE %$4000+t+703,10:; rotate and mirror x
-
-  ; now lets just poke some data to the first tile data
-  FOR %l=0 TO 32*4-1
-    READ %p
-    POKE %$4000 + (d * 256)+l,%p
-  NEXT %l
-
-
+  ; Set which palette index is transparent (0- 15, hex 0 - F), default is 0.
+  ; bits 7-4 = reseved
+  ; bits 3-0 = index value
+  REG %$4C, %$f
 
 ENDPROC
 
-DEFPROC CloseTiles()
+DEFPROC SetTile(%x,%y,%t,%f)
+  POKE %$4000+(x*2)+(y*80),%t
+  POKE %$4000+(x*2)+(y*80)+1,%f
+ENDPROC
+
+DEFPROC DrawTiles()
+  PROC SetTile(8,4,1,0)
+  PROC SetTile(10,4,2,0)
+  PROC SetTile(12,4,3,0)
+
+  ; NOTE :
+  ; bit 3 = xmirror  = 8
+  ; bit 2 = ymirror  = 4
+  ; bit 1 = Rotate   = 2
+  PROC SetTile(20,4,3,%@0000)
+  PROC SetTile(22,4,3,%@0010)
+  PROC SetTile(24,4,3,%@0100)
+  PROC SetTile(26,4,3,%@1010)
+ENDPROC
+
+DEFPROC CloseTileLayer()
   ; Create a TileSet 40 x 32. ( 1280 )
   ; The TileMap will be set to use 0x6f00 ( -> 0x7eff) (28415 + 1279 )
 
@@ -165,18 +152,38 @@ DEFPROC CloseTiles()
   ; bit 2 - Reserved
   ; bit 1 - 0 = Do not enable 512 tile mode
   ; bit 0 - 1 = Force tilemap over ULA mode
-  REG %$6B, %@00000000
+  REG %$6B,%@00000000
+
+  ; Clean up the memory for the default display
+  CLS
+ENDPROC
+
+DEFPROC GetTileAddress(%t)
+  LOCAL %a
+  %a = %$4000 + ($10 * 256) + (t*32)
+ENDPROC =%a
+
+DEFPROC CreateTiles()
+  ; now lets just poke some data to the first tile data
+  LOCAL %a
+
+  FOR %t=0 TO 3
+    PROC GetTileAddress(%t) TO %a
+    FOR %p=0 TO 31
+      READ %v
+      POKE %a+p,%v
+    NEXT %p
+  NEXT %t
 ENDPROC
 
 ; tile data 8x8 pixels. 4 bits per pixel
-
 DATA %$00,%$00,%$00,%$00
-DATA %$01,%$11,%$11,%$10
-DATA %$01,%$00,%$00,%$10
-DATA %$01,%$01,%$10,%$10
-DATA %$01,%$01,%$10,%$10
-DATA %$01,%$00,%$00,%$10
-DATA %$01,%$11,%$11,%$10
+DATA %$00,%$00,%$00,%$00
+DATA %$00,%$00,%$00,%$00
+DATA %$00,%$01,%$10,%$00
+DATA %$00,%$01,%$10,%$00
+DATA %$00,%$00,%$00,%$00
+DATA %$00,%$00,%$00,%$00
 DATA %$00,%$00,%$00,%$00
 
 DATA %$20,%$00,%$00,%$00
@@ -205,5 +212,3 @@ DATA %$00,%$00,%$00,%$00
 DATA %$00,%$00,%$00,%$00
 DATA %$00,%$00,%$00,%$00
 DATA %$00,%$00,%$00,%$00
-
-
