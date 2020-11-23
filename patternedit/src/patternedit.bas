@@ -7,6 +7,16 @@
 RUN AT 3: ; May as well use all that processor power
 ;PROC InitDisplay()
 
+; For now Always load/save the palette data file as "TEST.SPR"
+BANK NEW patternBank
+
+ON ERROR BANK patternBank ERASE 227: SAVE "TEST.SPR" BANK patternBank
+
+;BANK NEW patternBank
+LOAD "TEST.SPR" BANK patternBank
+
+ON ERROR
+
 BANK NEW tempbank
 LOAD "globalvars.bas" BANK tempbank
 BANK tempbank PROC InitVars()
@@ -48,12 +58,18 @@ REPEAT
 
   IF %k(5) & 16 = 16 THEN BANK helpbank PROC HelpScreen()
 
-  ; Whatever has happened for now always make sure
+  ; ctrl is down and S pressed then save the data
+  IF %k(7)&2=2 AND (k(24)&2=2) THEN SAVE "TEST.SPR" BANK patternBank
+
+  ; ctrl is down and Q pressed then end the app
+  IF %k(7)&2=2 AND (k(22)&1=1) THEN STOP
+  
+; Whatever has happened for now always make sure
   ; the current pattern is displayed in the main sprite and the normal sized sprite
   SPRITE 0,32,32,(ty*16)+tx,%@00000001,0,3,3
   SPRITE 1,32+(17*8)-8,32+2*16,(ty*16)+tx,1
 
-  ; thjis is the aminating sprite ( eventually)
+  ; this is the aminating sprite ( eventually)
   SPRITE 2,32+(17*8)-8,32+5*16,(ty*16)+tx,1
 
   PROC UpdateCursor()
@@ -63,14 +79,26 @@ REPEAT
 
 REPEAT UNTIL finished = 1
 
+;
+; Read back all the palette data
+; and write it to the palette bank
+
+SAVE "TEST.SPR" BANK patternBank
+
 STOP 
 
 DEFPROC HandleSprite()
-  if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF cy > 0 THEN PROC HideSpriteCursor(): cy=cy-1
-  if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF cy < 15 THEN PROC HideSpriteCursor(): cy=cy+1
+  IF %k(6)&1=1 AND (k(1)&8=8) THEN PROC HideSpriteCursor():cy=cy-1
+  IF cy < 0 THEN cy=15
 
-  if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF cx > 0 THEN PROC HideSpriteCursor(): cx=cx-1
-  if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF cx < 15 THEN PROC HideSpriteCursor(): cx=cx+1
+  IF %k(6)&1=1 AND (k(1)&16=16) THEN PROC HideSpriteCursor():cy=cy+1
+  IF cy > 15 THEN cy=0
+
+  IF %k(6)&1=1 AND (k(0)&16=16) THEN PROC HideSpriteCursor():cx=cx-1
+  IF cx < 0 THEN cx=15
+
+  IF %k(6)&1=1 AND (k(1)&4=4) THEN PROC HideSpriteCursor():cx=cx+1
+  IF cx > 15 THEN cx=0
 
   ; The . Key will plot the pixel 
   IF %(k(7)&6=6) THEN PROC PlotPixelToPattern(ty*16+tx,cx,cy,py*16+px)
@@ -124,9 +152,11 @@ DEFPROC InitLayerOne()
 
   LAYER 1,1: ; Use Standard Res mode
   PAPER 7
+  ; BRIGHT 1
+
   CLS
 
-  BORDER 1
+  BORDER 0
 
   LAYER OVER 1: ; Layer 2 over Sprite over Layer 1
   ; Do all the stuff we need to do
@@ -155,10 +185,10 @@ DEFPROC InitLayerTwo()
   INK 0
   ; Render the grid over the main sprite
   FOR %x=0 to 15
-    PLOT 0,%x*8
-    DRAW 8*16,0
-    PLOT %x*8,0
-    DRAW 0,8*16
+    PLOT 0,%x*8+7
+    DRAW 8*16-1,0
+    PLOT %x*8+7,0
+    DRAW 0,8*16-1
   NEXT %x
 
   ; Render the grid over the palette
@@ -170,25 +200,16 @@ DEFPROC InitLayerTwo()
   NEXT %x
 
   ; Render the grid over the pattern
-  FOR %x=0 to 16
-    PLOT 0,%x*16+128
-    DRAW 16*16,0
-    PLOT %x*16,128
-    DRAW 0,4*16
-  NEXT %x
+;  FOR %x=0 to 16
+;    PLOT 0,%x*16+128
+;    DRAW 16*16,0
+;    PLOT %x*16,128
+;    DRAW 0,4*16
+;  NEXT %x
 ENDPROC
 
 DEFPROC InitSprites()
-  BANK NEW patternBank
-  BANK patternBank ERASE 227
-
-  ; Temp code to draw something in the first pattern
-  BANK patternBank POKE 0,255
-  BANK patternBank POKE 15,255
-  BANK patternBank POKE 240,255
-  BANK patternBank POKE 255,255
-
-  ; and display the sprite
+  ; Assign patterns to the sprite and enable sprites
   SPRITE CLEAR
   SPRITE BANK patternBank
   SPRITE PRINT 1
@@ -244,21 +265,22 @@ ENDPROC
 
 DEFPROC ShowCursor(%x,%y,w,h)
   LAYER 2
-  IF pFlash=0 THEN ch=227:cv=255: ELSE ch=255:cv=227
+  IF pFlash=0 THEN ch=0:cv=255: ELSE ch=255:cv=0
   INK ch: PLOT %x,%y: DRAW w,0: INK cv: DRAW 0,h: INK ch: DRAW w*-1,0: INK cv: DRAW 0,h*-1
 ENDPROC
 
-DEFPROC HideCursor(%x,%y,w,h)
+DEFPROC HideCursor(%x,%y,w,h,%c)
   LAYER 2
-  INK 0: PLOT %x,%y: DRAW w,0: DRAW 0,h: DRAW w*-1,0: DRAW 0,h*-1
+  
+  INK %c: PLOT %x,%y: DRAW w,0: DRAW 0,h: DRAW w*-1,0: DRAW 0,h*-1
 ENDPROC
 
 DEFPROC ShowSpriteCursor()
-  PROC ShowCursor(cx*8,cy*8,8,8)
+  PROC ShowCursor(cx*8-1,cy*8-1,8,8)
 ENDPROC
 
 DEFPROC HideSpriteCursor()
-  PROC HideCursor(cx*8,cy*8,8,8)
+  PROC HideCursor(cx*8-1,cy*8-1,8,8,0)
 ENDPROC
 
 DEFPROC ShowPaletteCursor()
@@ -266,15 +288,15 @@ DEFPROC ShowPaletteCursor()
 ENDPROC
 
 DEFPROC HidePaletteCursor()
-  PROC HideCursor(px*6+160,py*6,6,6)
+  PROC HideCursor(px*6+160,py*6,6,6,0)
 ENDPROC
 
 DEFPROC ShowPatternCursor()
-  PROC ShowCursor(tx*16,ty*16+128,16,16)
+  PROC ShowCursor(tx*16,ty*16+128,15,15)
 ENDPROC
 
 DEFPROC HidePatternCursor()
-  PROC HideCursor(tx*16,ty*16+128,16,16)
+  PROC HideCursor(tx*16,ty*16+128,15,15,227)
 ENDPROC
 
 ; Basic command LAYER ERASE doesnt work in CSpect
