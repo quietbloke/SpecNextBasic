@@ -50,9 +50,10 @@ REPEAT
 
   ; Whatever has happened for now always make sure
   ; the current pattern is displayed in the main sprite and the normal sized sprite
-  SPRITE 0,32,32,(ty*16)+tx,%@00000001,0,2,2
+  SPRITE 0,32,32,(ty*16)+tx,%@00000001,0,3,3
   SPRITE 1,32+(16*8)+8,32+8+6*16,(ty*16)+tx,1
 
+  PROC UpdateCursor()
   PROC ShowSpriteCursor()
   PROC ShowPaletteCursor()
   PROC ShowPatternCursor()
@@ -68,8 +69,11 @@ DEFPROC HandleSprite()
   if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF cx > 0 THEN PROC HideSpriteCursor(): cx=cx-1
   if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF cx < 15 THEN PROC HideSpriteCursor(): cx=cx+1
 
-  ; The . Key will plot a pixel 
+  ; The . Key will plot the pixel 
   IF %(k(7)&6=6) THEN PROC PlotPixelToPattern(ty*16+tx,cx,cy,py*16+px)
+
+  ; The z Key will clear the pixel 
+  IF %(k(6)&2=2) THEN PROC PlotPixelToPattern(ty*16+tx,cx,cy,227)
 ENDPROC
 
 DEFPROC HandlePalette()
@@ -129,28 +133,43 @@ ENDPROC
 DEFPROC InitLayerTwo()
   ; Select layer 2, and clear all pixels to transparent.
   ; This will mean Layer 1 can have the screen 
-  LAYER 2
   LAYER 2,1
   PAPER 227
   CLS
-
-  INK 0
-  ; Render the palette grid over the main sprite
-  FOR %x=0 to 16
-    PLOT 0,%x*4
-    DRAW 4*16,0
-    PLOT %x*4,0
-    DRAW 0,4*16
-  NEXT %x
 
   ; Render the palette
   %c=0
   FOR %y=0 to 15
     FOR %x=0 TO 15
-      PROC LAYERERASE(%x*4+160+32-1,%y*4+1,3,3,%c)
+      PROC LAYERERASE(%x*6+128+32,%y*6,6,6,%c)
       %c=%c+1
     NEXT %x
   NEXT %y
+
+  INK 0
+  ; Render the grid over the main sprite
+  FOR %x=0 to 16
+    PLOT 0,%x*8
+    DRAW 8*16,0
+    PLOT %x*8,0
+    DRAW 0,8*16
+  NEXT %x
+
+  ; Render the grid over the palette
+  FOR %x=0 to 16
+    PLOT 160,%x*6
+    DRAW 6*16,0
+    PLOT %x*6+160,0
+    DRAW 0,6*16
+  NEXT %x
+
+  ; Render the grid over the pattern
+  FOR %x=0 to 16
+    PLOT 0,%x*16+128
+    DRAW 16*16,0
+    PLOT %x*16,128
+    DRAW 0,4*16
+  NEXT %x
 ENDPROC
 
 DEFPROC InitSprites()
@@ -200,45 +219,37 @@ DEFPROC PlotPixelToPattern(%p,%x,%y,%c)
   SPRITE BANK patternBank
 ENDPROC
 
-DEFPROC ShowSpriteCursor()
-  LAYER 2
-  LOCAL %c
+; Make the cursor flash
+DEFPROC UpdateCursor()
   pFlashCount=pFlashCount+1
   IF pFlashCount > pFlashRate THEN pFlash=1-pFlash: pFlashCount = 0
+ENDPROC
 
-  ;  IF pFlash=0 THEN %c=127: ELSE %c=227
-  ;  INK %c
-  ;  PROC LAYERERASE(cx*8,cy*8,8,8,%c)
-  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
-  INK ch: PLOT cx*4,cy*4: DRAW 4,0: INK cv: DRAW 0,4: INK ch: DRAW -4,0: INK cv: DRAW 0,-4
+DEFPROC ShowCursor(%x,%y,w,h)
+  LAYER 2
+  IF pFlash=0 THEN ch=227:cv=255: ELSE ch=255:cv=227
+  INK ch: PLOT %x,%y: DRAW w,0: INK cv: DRAW 0,h: INK ch: DRAW w*-1,0: INK cv: DRAW 0,h*-1
+ENDPROC
+
+DEFPROC HideCursor(%x,%y,w,h)
+  LAYER 2
+  INK 0: PLOT %x,%y: DRAW w,0: DRAW 0,h: DRAW w*-1,0: DRAW 0,h*-1
+ENDPROC
+
+DEFPROC ShowSpriteCursor()
+  PROC ShowCursor(cx*8,cy*8,8,8)
 ENDPROC
 
 DEFPROC HideSpriteCursor()
-  PROC LAYERERASE(cx*4,cy*4,4,4,227)
-  INK 0
-  PLOT cx*4,cy*4
-  DRAW 4,0
-  DRAW 0,4
-  DRAW -4,0
-  DRAW 0,-4
-  ;  pFlashCount=0
-  ;  pFlash = 0
+  PROC HideCursor(cx*8,cy*8,8,8)
 ENDPROC
 
 DEFPROC ShowPaletteCursor()
-  LAYER 2
-  INK 255
-
-;  PLOT px*4+159+31,py*4: DRAW 4,0: DRAW 0,4: DRAW -4,0: DRAW 0,-4 
-  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
-  INK ch: PLOT px*4+159+31,py*4: DRAW 4,0: INK cv: DRAW 0,4: INK ch: DRAW -4,0: INK cv: DRAW 0,-4
+  PROC ShowCursor(px*6+160,py*6,6,6)
 ENDPROC
 
 DEFPROC HidePaletteCursor()
-  LAYER 2
-  INK 227
-
-  PLOT px*4+159+31,py*4: DRAW 4,0: DRAW 0,4: DRAW -4,0: DRAW 0,-4 
+  PROC HideCursor(px*6+160,py*6,6,6)
 ENDPROC
 
 DEFPROC ShowPatternCursor()
@@ -247,14 +258,17 @@ DEFPROC ShowPatternCursor()
 
 ;  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
   IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
-  INK ch: PLOT tx*16,ty*16+128: DRAW 15,0: INK cv: DRAW 0,15: INK ch: DRAW -15,0: INK cv: DRAW 0,-15
+;  INK ch: PLOT tx*16,ty*16+128: DRAW 15,0: INK cv: DRAW 0,15: INK ch: DRAW -15,0: INK cv: DRAW 0,-15
+
+  PROC ShowCursor(tx*16,ty*16+128,16,16)
 ENDPROC
 
 DEFPROC HidePatternCursor()
   LAYER 2
   INK 227
 
-  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
+;  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
+  PROC HideCursor(tx*16,ty*16+128,16,16)
 ENDPROC
 
 ; Basic command LAYER ERASE doesnt work in CSpect
