@@ -51,7 +51,10 @@ REPEAT
   ; Whatever has happened for now always make sure
   ; the current pattern is displayed in the main sprite and the normal sized sprite
   SPRITE 0,32,32,(ty*16)+tx,%@00000001,0,3,3
-  SPRITE 1,32+(16*8)+8,32+8+6*16,(ty*16)+tx,1
+  SPRITE 1,32+(17*8)-8,32+2*16,(ty*16)+tx,1
+
+  ; thjis is the aminating sprite ( eventually)
+  SPRITE 2,32+(17*8)-8,32+5*16,(ty*16)+tx,1
 
   PROC UpdateCursor()
   PROC ShowSpriteCursor()
@@ -74,6 +77,9 @@ DEFPROC HandleSprite()
 
   ; The z Key will clear the pixel 
   IF %(k(6)&2=2) THEN PROC PlotPixelToPattern(ty*16+tx,cx,cy,227)
+
+  ; The s Key will select the colour of the pixel
+  IF %(k(4)&2=2) THEN PROC GetPixelColourFromPattern(ty*16+tx,cx,cy)
 ENDPROC
 
 DEFPROC HandlePalette()
@@ -148,7 +154,7 @@ DEFPROC InitLayerTwo()
 
   INK 0
   ; Render the grid over the main sprite
-  FOR %x=0 to 16
+  FOR %x=0 to 15
     PLOT 0,%x*8
     DRAW 8*16,0
     PLOT %x*8,0
@@ -198,12 +204,13 @@ DEFPROC InitSprites()
 
   ; placeholder sprites
   ; show the animation frames ( up to 6? or 8 ?)
-  FOR %x=0 TO 6
-  ;    SPRITE %x+2,%x*16+(21*8),22*6,0,1
-    SPRITE %x+2, 32 + (16*8)+8,%x*16 + 32,0,1
+
+  %s = 3
+  FOR %x=0 TO 7
+    SPRITE %x+s,32+(17*8)+8,%x*16+32,%x,1:; For now anim frames are pattern 0-7
   NEXT %x
 
-  %s = 8
+   %s = 11
 
   FOR %y=0 TO 3
     FOR %x=0 TO 15
@@ -217,6 +224,16 @@ ENDPROC
 DEFPROC PlotPixelToPattern(%p,%x,%y,%c)
   BANK patternBank POKE % ((p*256)+(y*16)+x),%c
   SPRITE BANK patternBank
+ENDPROC
+
+DEFPROC GetPixelColourFromPattern(%p,%x,%y)
+  %c=%BANK INT{patternBank} PEEK ((p*256)+(y*16)+x)
+
+  %y=%(c/16)
+  %x=%(c-(y*16))
+  PROC HidePaletteCursor()
+  px=%x
+  py=%y
 ENDPROC
 
 ; Make the cursor flash
@@ -253,21 +270,10 @@ DEFPROC HidePaletteCursor()
 ENDPROC
 
 DEFPROC ShowPatternCursor()
-  LAYER 2
-  INK 255
-
-;  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
-  IF pFlash=0 THEN ch=222:cv=0: ELSE ch=0:cv=222
-;  INK ch: PLOT tx*16,ty*16+128: DRAW 15,0: INK cv: DRAW 0,15: INK ch: DRAW -15,0: INK cv: DRAW 0,-15
-
   PROC ShowCursor(tx*16,ty*16+128,16,16)
 ENDPROC
 
 DEFPROC HidePatternCursor()
-  LAYER 2
-  INK 227
-
-;  PLOT tx*16,ty*16+128: DRAW 15,0: DRAW 0,15: DRAW -15,0: DRAW 0,-15 
   PROC HideCursor(tx*16,ty*16+128,16,16)
 ENDPROC
 

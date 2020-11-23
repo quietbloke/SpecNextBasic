@@ -17,8 +17,9 @@ DEFPROC HelpScreen()
 
   PRINT AT 8,0; "       Sprite Editor            "
   PRINT AT 9,0; "--------------------------------"
-  PRINT AT 10,0;". Paint pixel                   "
-  PRINT AT 11,0;"z Clear pixel                   "
+  PRINT AT 10,0; ". Paint pixel                   "
+  PRINT AT 11,0; "z Clear pixel                   "
+  PRINT AT 12,0; "s Select colour of pixel        "
 
   PRINT AT 15,0; "           Palette              "
   PRINT AT 16,0; "--------------------------------"

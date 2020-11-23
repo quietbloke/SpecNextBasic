@@ -6,8 +6,9 @@ FIND := find
 BANKSRCDIR := src/bank
 OBJDIR := build
 
-EMU := mono ~/CSpect/CSpect.exe -w3 -vsync -s28 -esc -60 -tv -basickeys -zxnext -nextrom -mmc=../../../../../SpectSD/cspect-next-2gb.img
-TXTTOBAS = txt2nextbasic.py 
+#EMU := mono ~/CSpect/CSpect.exe -w3 -vsync -s28 -esc -60 -tv -basickeys -zxnext -nextrom -mmc=../../../../../SpectSD/cspect-next-2gb.img
+EMU := mono ~/CSpect/CSpect.exe -w3 -vsync -s28 -esc -60 -basickeys -zxnext -nextrom -mmc=../../../../../SpectSD/cspect-next-2gb.img
+TXTTOBAS = txt2bas -C 
 HDFMONKEY = hdfmonkey
 SDIMAGE = ~/SpectSD/cspect-next-2gb.img
 
@@ -17,14 +18,14 @@ BANKOBJECTS = $(BANKSOURCES:$(BANKSRCDIR)/%.bas=$(OBJDIR)/bank/%.bas)
 
 #build/$(APP).bas : src/$(APP).bas build/bank/globalvars.bas build/bank/splashscreen.bas build/bank/helpscreen.bas
 build/$(APP).bas : src/$(APP).bas $(BANKOBJECTS)
-	txt2bas -i src/$(APP).bas -o build/$(APP).bas
+	$(TXTTOBAS) -i src/$(APP).bas -o build/$(APP).bas
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke/$(APP)
 	$(HDFMONKEY) put ~/SpectSD/cspect-next-2gb.img $@ /quietbloke/$(APP)/$(notdir $@)
 
 #$(BANKOBJECTS) : $(BANKSOURCES)
 build/bank/%.bas : src/bank/%.bas
-	txt2bas -bank -i $< -o $@
+	$(TXTTOBAS) -bank -i $< -o $@
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke
 	-$(HDFMONKEY) mkdir ~/SpectSD/cspect-next-2gb.img /quietbloke/$(APP)
 	$(HDFMONKEY) put ~/SpectSD/cspect-next-2gb.img $@ /quietbloke/$(APP)/$(notdir $@)
