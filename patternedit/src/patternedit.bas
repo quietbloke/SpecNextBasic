@@ -3,9 +3,12 @@
 ; Created by QuietBloke 2020 
 ; 
 ; #define C=3
+patternBank=0
+helpbank=0:; HelpScreen
+iobank=0:; Keyboard Input
+tempbank=0:; Used for globalvars and splashscreen 
 
 RUN AT 3: ; May as well use all that processor power
-;PROC InitDisplay()
 
 ; For now Always load/save the palette data file as "TEST.SPR"
 BANK NEW patternBank
@@ -119,11 +122,25 @@ DEFPROC HandlePalette()
 ENDPROC
 
 DEFPROC HandlePattern()
-  if %k(6) & 1 = 1 AND (k(1) & 8 = 8) THEN IF ty > 0 THEN PROC HidePatternCursor(): ty=ty-1
-  if %k(6) & 1 = 1 & (k(1) & 16 = 16) THEN IF ty < 3 THEN PROC HidePatternCursor(): ty=ty+1
+  IF %k(6)&1=1 AND (k(1)&8=8) THEN IF ty > 0 THEN PROC HidePatternCursor():ty=ty-1
+  IF %k(6)&1=1&(k(1)&16=16) THEN IF ty < 3 THEN PROC HidePatternCursor():ty=ty+1
 
-  if %k(6) & 1 = 1 & (k(0) & 16 = 16) THEN IF tx > 0 THEN PROC HidePatternCursor(): tx=tx-1
-  if %k(6) & 1 = 1 & (k(1) & 4 = 4) THEN IF tx < 15 THEN PROC HidePatternCursor(): tx=tx+1
+  IF %k(6)&1=1&(k(0)&16=16) THEN IF tx > 0 THEN PROC HidePatternCursor():tx=tx-1
+  IF %k(6)&1=1&(k(1)&4=4) THEN IF tx < 15 THEN PROC HidePatternCursor():tx=tx+1
+
+  ; ctrl-c key press will make a note of the current pattern
+  IF %k(7)&2=2 AND (k(26)&8=8) THEN copyPattern=(ty*16)+tx 
+
+  ; ctrl-p key press will copy the noted pattern to the current pattern
+  IF %k(7)&2=2 AND (k(23)&1=1) THEN PROC PatternPaste(copyPattern,(ty*16)+tx)
+ENDPROC
+
+DEFPROC PatternPaste(%s,%t)
+  FOR %p=0 TO 255
+    %b=%BANK INT {patternBank} PEEK (s*256+p)
+    BANK patternBank POKE %(t*256+p),%b
+  NEXT %p
+  SPRITE BANK patternBank
 ENDPROC
 
 ; Layer 1 at the back. This can be used to display any borders
@@ -249,7 +266,6 @@ ENDPROC
 
 DEFPROC GetPixelColourFromPattern(%p,%x,%y)
   %c=%BANK INT{patternBank} PEEK ((p*256)+(y*16)+x)
-
   %y=%(c/16)
   %x=%(c-(y*16))
   PROC HidePaletteCursor()
