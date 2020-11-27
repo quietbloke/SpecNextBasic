@@ -28,7 +28,12 @@ BANK tempbank CLEAR
 BANK NEW tempbank
 LOAD "splashscreen.bas" BANK tempbank
 BANK tempbank PROC SplashScreen()
+
+; We are done with bank so free it
 BANK tempbank CLEAR
+
+; Any cut/paste operations can use this bank
+BANK NEW clipboardbank
 
 BANK NEW helpbank
 LOAD "helpscreen.bas" BANK helpbank
@@ -87,6 +92,12 @@ REPEAT UNTIL finished = 1
 ; and write it to the palette bank
 
 SAVE "TEST.SPR" BANK patternBank
+
+; As we have gracefully ended the application
+; we can free up all those banks
+BANK CLEAR iobank
+BANK CLEAR helpbank
+BANK CLEAR clipboardbank
 
 STOP 
 
