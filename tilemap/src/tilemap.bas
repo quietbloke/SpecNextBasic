@@ -32,6 +32,8 @@ finished = 0
 REPEAT
   BANK iobank PROC ReadKeyboard()
 
+;  BANK tilebank PROC TileSet(%RND 40,%RND 32,%1,%( RND 7) *2)
+
   IF %k(7) & 1 = 1 THEN finished = 1
 REPEAT UNTIL finished = 1
 
